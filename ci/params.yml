@@ -1,0 +1,7 @@
+github-uri: https://github.com/gauravopcito/microservices-demo.git
+git-branch: master
+docker-hub-email: gauravdabhade24@gmail.com
+docker-hub-username: gauravdabhade
+docker-hub-pass: fr3sca
+docker-hub-repository: hipstershops
+k8s_server: /home/gaurav/.kube/config
