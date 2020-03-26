@@ -57,7 +57,7 @@ resources:
   type: kubernetes
   source:
     server: https://127.0.0.1:16443
-    insecure-skip-tls-verify: true
+#    insecure-skip-tls-verify: true
 
 - name: kubeconfig-file
   type: file
@@ -68,7 +68,7 @@ resources:
             clusters:
             - cluster:
                 server: https://127.0.0.1:16443
-                insecure-skip-tls-verify: true
+#                insecure-skip-tls-verify: true
               name: microk8s-cluster
             contexts:
             - context:
@@ -146,7 +146,10 @@ jobs:
   plan:
   - in_parallel:
       - get: hisptershoprepo
+        passed:
+          - frontend-publish-job
       - get: kubeconfig-file
+        trigger: true
       - put: k8s
         params:
           kubectl: apply -f hisptershoprepo/kubernetes-specs/frontend.yaml -n hisptershop
@@ -156,7 +159,10 @@ jobs:
   plan:
   - in_parallel:
       - get: hisptershoprepo
+        passed:
+          - frontend-publish-job
       - get: kubeconfig-file
+        trigger: true
       - put: k8s
         params:
           kubectl: apply -f hisptershoprepo/kubernetes-specs/productcatalogservice.yaml -n hisptershop
@@ -166,7 +172,10 @@ jobs:
   plan:
   - in_parallel:
       - get: hisptershoprepo
+        passed:
+          - frontend-publish-job
       - get: kubeconfig-file
+        trigger: true
       - put: k8s
         params:
           kubectl: apply -f hisptershoprepo/kubernetes-specs/currencyservice.yaml -n hisptershop
@@ -176,7 +185,10 @@ jobs:
   plan:
   - in_parallel:
       - get: hisptershoprepo
+        passed:
+          - frontend-publish-job
       - get: kubeconfig-file
+        trigger: true
       - put: k8s
         params:
           kubectl: apply -f hisptershoprepo/kubernetes-specs/recommendationservice.yaml -n hisptershop
@@ -186,91 +198,24 @@ jobs:
   plan:
   - in_parallel:
       - get: hisptershoprepo
+        passed:
+          - frontend-publish-job
       - get: kubeconfig-file
+        trigger: true
       - put: k8s
         params:
           kubectl: apply -f hisptershoprepo/kubernetes-specs/cartservice.yaml -n hisptershop
           kubeconfig_file: kubeconfig-file/config
 
-
-#- name: frontend-deploy
-#  public: true
-#  serial: false
-#  plan:
-#    - in_parallel:
-#      - get: hisptershoprepo
-#        trigger: true
-#      - get: frontend-docker-image
-#        trigger: true
-#        passed:
-#          - frontend-publish-job
-#    - put: k8s
-#      params:
-#        kubectl: apply -f hisptershoprepo/kubernetes-specs -f hisptershoprepo/kubernetes-specs/frontend.yaml -n hisptershop
-#        wait_until_ready: 300
-#
-#- name: productcatalogservice-deploy
-#  public: true
-#  serial: false
-#  plan:
-#    - in_parallel:
-#      - get: hisptershoprepo
-#        trigger: true
-#      - get: productcatalogservice-docker-image
-#        trigger: true
-#        passed:
-#          - productcatalogservice-publish-job
-#    - put: k8s
-#      params:
-#        kubectl: apply -f hisptershoprepo/kubernetes-specs -f hisptershoprepo/kubernetes-specs/productcatalogservice.yaml -n hisptershop
-#        wait_until_ready: 300
-#
-#- name: currencyservice-deploy
-#  public: true
-#  serial: false
-#  plan:
-#    - in_parallel:
-#      - get: hisptershoprepo
-#        trigger: true
-#        passed:
-#          - currencyservice-deploy
-#      - get: currencyservice-docker-image
-#        trigger: true
-#        passed:
-#          - currencyservice-publish-job
-#    - put: k8s
-#      params:
-#        kubectl: apply -f hisptershoprepo/kubernetes-specs -f hisptershoprepo/kubernetes-specs/currencyservice.yaml -n hisptershop
-#        wait_until_ready: 300
-#
-#- name: recommendationservice-deploy
-#  public: true
-#  serial: false
-#  plan:
-#    - in_parallel:
-#      - get: hisptershoprepo
-#        trigger: true
-#      - get: recommendationservice-docker-image
-#        trigger: true
-#        passed:
-#          - recommendationservice-publish-job
-#    - put: k8s
-#      params:
-#        kubectl: apply -f hisptershoprepo/kubernetes-specs -f hisptershoprepo/kubernetes-specs/recommendationservice.yaml -n hisptershop
-#        wait_until_ready: 300
-#
-#- name: cartservice-deploy
-#  public: true
-#  serial: false
-#  plan:
-#    - in_parallel:
-#      - get: hisptershoprepo
-#        trigger: true
-#      - get: cartservice-docker-image
-#        trigger: true
-#        passed:
-#          - cartservice-publish-job
-#    - put: k8s
-#      params:
-#        kubectl: apply -f hisptershoprepo/kubernetes-specs -f hisptershoprepo/kubernetes-specs/cartservice.yaml -n hisptershop
-#        wait_until_ready: 300
+- name: deploy-redis-to-k8s
+  plan:
+  - in_parallel:
+      - get: hisptershoprepo
+        passed:
+          - frontend-publish-job
+      - get: kubeconfig-file
+        trigger: true
+      - put: k8s
+        params:
+          kubectl: apply -f hisptershoprepo/kubernetes-specs/redis.yaml -n hisptershop
+          kubeconfig_file: kubeconfig-file/config
