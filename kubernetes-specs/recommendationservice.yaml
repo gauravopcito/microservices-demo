@@ -28,7 +28,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: hipstershops/recommendationservice:ccff406cdcd3e043b432fe99b4038d1b4699c702
+        image: hipstershops/recommendationservice:IMAGE_ID
         ports:
         - containerPort: 8080
         env:

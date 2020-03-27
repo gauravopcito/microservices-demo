@@ -7,7 +7,7 @@ resource_types:
     tag: latest
 
 resources:
-- name: hisptershoprepo
+- name: hipstershoprepo
   type: git
   source:
     uri: ((github-uri))
@@ -90,132 +90,148 @@ jobs:
   public: true
   serial: false
   plan:
-  - get: hisptershoprepo
+  - get: hipstershoprepo
     trigger: true
   - put: frontend-docker-image
     params:
-      build: hisptershoprepo/src/frontend
-      additional_tags: hisptershoprepo/.git/refs/heads/((git-branch))
+      build: hipstershoprepo/src/frontend
+      additional_tags: hipstershoprepo/.git/refs/heads/((git-branch))
 
 - name: productcatalogservice-publish-job
   public: true
   serial: false
   plan:
-  - get: hisptershoprepo
+  - get: hipstershoprepo
     trigger: true
   - put: productcatalogservice-docker-image
     params:
-      build: hisptershoprepo/src/productcatalogservice
-      additional_tags: hisptershoprepo/.git/refs/heads/((git-branch))
+      build: hipstershoprepo/src/productcatalogservice
+      additional_tags: hipstershoprepo/.git/refs/heads/((git-branch))
 
 - name: currencyservice-publish-job
   public: true
   serial: false
   plan:
-  - get: hisptershoprepo
+  - get: hipstershoprepo
     trigger: true
   - put: currencyservice-docker-image
     params:
-      build: hisptershoprepo/src/currencyservice
-      additional_tags: hisptershoprepo/.git/refs/heads/((git-branch))
+      build: hipstershoprepo/src/currencyservice
+      additional_tags: hipstershoprepo/.git/refs/heads/((git-branch))
 
 - name: recommendationservice-publish-job
   public: true
   serial: false
   plan:
-  - get: hisptershoprepo
+  - get: hipstershoprepo
     trigger: true
   - put: recommendationservice-docker-image
     params:
-      build: hisptershoprepo/src/recommendationservice
-      additional_tags: hisptershoprepo/.git/refs/heads/((git-branch))
+      build: hipstershoprepo/src/recommendationservice
+      additional_tags: hipstershoprepo/.git/refs/heads/((git-branch))
 
 - name: cartservice-publish-job
   public: true
   serial: false
   plan:
-  - get: hisptershoprepo
+  - get: hipstershoprepo
     trigger: true
   - put: cartservice-docker-image
     params:
-      build: hisptershoprepo/src/cartservice
-      additional_tags: hisptershoprepo/.git/refs/heads/((git-branch))
+      build: hipstershoprepo/src/cartservice
+      additional_tags: hipstershoprepo/.git/refs/heads/((git-branch))
 
 ## deployment jobs ###
-- name: deploy-frontend-to-k8s
+- name: deploy-to-k8s
   plan:
-  - in_parallel:
-      - get: hisptershoprepo
-        passed:
-          - frontend-publish-job
-      - get: kubeconfig-file
-        trigger: true
-      - put: k8s
-        params:
-          kubectl: apply -f hisptershoprepo/kubernetes-specs/frontend.yaml -n hisptershop
-          kubeconfig_file: kubeconfig-file/config
+    - get: hipstershoprepo
+    - get: kubeconfig-file
+    - task: task_replce_image_id
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source: {repository: ubuntu}
+          inputs:
+            - name: hipstershoprepo
+          run:
+            path: sh
+            args:
+              - -exc
+              - |
+                cd hipstershoprepo/
+                IMAGE_ID=$(<.git/refs/heads/master)
+                echo $IMAGE_ID
+                cd kubernetes-specs
+                for f in *.yaml; do sed -i "s|IMAGE_ID|$IMAGE_ID|g" "$f"; done
+        outputs:
+          - name: hipstershoprepo
+    - put: k8s
+      params:
+        kubectl: apply -f hipstershoprepo/kubernetes-specs/ -n hisptershop
+        kubeconfig_file: kubeconfig-file/config
 
-- name: deploy-productcatalogservice-to-k8s
-  plan:
-  - in_parallel:
-      - get: hisptershoprepo
-        passed:
-          - frontend-publish-job
-      - get: kubeconfig-file
-        trigger: true
-      - put: k8s
-        params:
-          kubectl: apply -f hisptershoprepo/kubernetes-specs/productcatalogservice.yaml -n hisptershop
-          kubeconfig_file: kubeconfig-file/config
-
-- name: deploy-currencyservice-to-k8s
-  plan:
-  - in_parallel:
-      - get: hisptershoprepo
-        passed:
-          - frontend-publish-job
-      - get: kubeconfig-file
-        trigger: true
-      - put: k8s
-        params:
-          kubectl: apply -f hisptershoprepo/kubernetes-specs/currencyservice.yaml -n hisptershop
-          kubeconfig_file: kubeconfig-file/config
-
-- name: deploy-recommendationservice-to-k8s
-  plan:
-  - in_parallel:
-      - get: hisptershoprepo
-        passed:
-          - frontend-publish-job
-      - get: kubeconfig-file
-        trigger: true
-      - put: k8s
-        params:
-          kubectl: apply -f hisptershoprepo/kubernetes-specs/recommendationservice.yaml -n hisptershop
-          kubeconfig_file: kubeconfig-file/config
-
-- name: deploy-cartservice-to-k8s
-  plan:
-  - in_parallel:
-      - get: hisptershoprepo
-        passed:
-          - frontend-publish-job
-      - get: kubeconfig-file
-        trigger: true
-      - put: k8s
-        params:
-          kubectl: apply -f hisptershoprepo/kubernetes-specs/cartservice.yaml -n hisptershop
-          kubeconfig_file: kubeconfig-file/config
+#- name: deploy-productcatalogservice-to-k8s
+#  plan:
+#  - in_parallel:
+#      - get: hipstershoprepo
+#        passed:
+#          - frontend-publish-job
+#      - get: kubeconfig-file
+#        trigger: true
+#      - put: k8s
+#        params:
+#          kubectl: apply -f hipstershoprepo/kubernetes-specs/productcatalogservice.yaml -n hisptershop
+#          kubeconfig_file: kubeconfig-file/config
+#
+#- name: deploy-currencyservice-to-k8s
+#  plan:
+#  - in_parallel:
+#      - get: hipstershoprepo
+#        passed:
+#          - frontend-publish-job
+#      - get: kubeconfig-file
+#        trigger: true
+#      - put: k8s
+#        params:
+#          kubectl: apply -f hipstershoprepo/kubernetes-specs/currencyservice.yaml -n hisptershop
+#          kubeconfig_file: kubeconfig-file/config
+#
+#- name: deploy-recommendationservice-to-k8s
+#  plan:
+#  - in_parallel:
+#      - get: hipstershoprepo
+#        passed:
+#          - frontend-publish-job
+#      - get: kubeconfig-file
+#        trigger: true
+#      - put: k8s
+#        params:
+#          kubectl: apply -f hipstershoprepo/kubernetes-specs/recommendationservice.yaml -n hisptershop
+#          kubeconfig_file: kubeconfig-file/config
+#
+#- name: deploy-cartservice-to-k8s
+#  plan:
+#  - in_parallel:
+#      - get: hipstershoprepo
+#        passed:
+#          - frontend-publish-job
+#      - get: kubeconfig-file
+#        trigger: true
+#      - put: k8s
+#        params:
+#          kubectl: apply -f hipstershoprepo/kubernetes-specs/cartservice.yaml -n hisptershop
+#          kubeconfig_file: kubeconfig-file/config
 
 - name: deploy-redis-to-k8s
   plan:
   - in_parallel:
-      - get: hisptershoprepo
+      - get: hipstershoprepo
         passed:
           - frontend-publish-job
       - get: kubeconfig-file
         trigger: true
       - put: k8s
         params:
-          kubectl: apply -f hisptershoprepo/kubernetes-specs/redis.yaml -n hisptershop
+          kubectl: apply -f hipstershoprepo/kubernetes-specs/redis.yaml -n hisptershop
           kubeconfig_file: kubeconfig-file/config

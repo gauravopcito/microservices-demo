@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: hipstershops/frontend:ccff406cdcd3e043b432fe99b4038d1b4699c702
+          image: hipstershops/frontend:IMAGE_ID
           ports:
           - containerPort: 8080
           env:
