@@ -15,43 +15,35 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cartservice
-  labels:
-    app: cartservice
+  name: paymentservice
 spec:
   selector:
     matchLabels:
-      app: cartservice
+      app: paymentservice
   template:
     metadata:
       labels:
-        app: cartservice
+        app: paymentservice
     spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: hipstershops/cartservice:IMAGE_ID
+        image: hipstershops/paymentservice:IMAGE_ID
         ports:
-        - containerPort: 7070
+        - containerPort: 50051
         env:
-        - name: REDIS_ADDR
-          value: "redis-cart:6379"
         - name: PORT
-          value: "7070"
-        - name: LISTEN_ADDR
-          value: "0.0.0.0"
+          value: "50051"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: cartservice
-  labels:
-    app: cartservice
+  name: paymentservice
 spec:
   type: ClusterIP
   selector:
-    app: cartservice
+    app: paymentservice
   ports:
   - name: grpc
-    port: 7070
-    targetPort: 7070
+    port: 50051
+    targetPort: 50051

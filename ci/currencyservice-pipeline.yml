@@ -1,0 +1,102 @@
+---
+resource_types:
+- name: kubernetes
+  type: docker-image
+  source:
+    repository: zlabjp/kubernetes-resource
+    tag: latest
+
+- name: file
+  type: docker-image
+  source:
+    repository: quay.io/henry40408/concourse-file-resource
+
+resources:
+- name: hipstershoprepo
+  type: git
+  source:
+    uri: ((github-uri))
+    branch: ((git-branch))
+
+- name: currencyservice-docker-image
+  type: docker-image
+  source:
+    email: ((docker-hub-email))
+    username: ((docker-hub-username))
+    password: ((docker-hub-pass))
+    repository: ((docker-hub-repository))/currencyservice
+
+- name: k8s
+  type: kubernetes
+  source:
+    server: https://192.168.100.8:16443
+    insecure-skip-tls-verify: true
+
+- name: kubeconfig-file
+  type: file
+  source:
+    filename: config
+    content: |
+            apiVersion: v1
+            clusters:
+            - cluster:
+                server: https://192.168.100.8:16443
+                insecure-skip-tls-verify: true
+              name: microk8s-cluster
+            contexts:
+            - context:
+                cluster: microk8s-cluster
+                user: admin
+              name: microk8s
+            current-context: microk8s
+            kind: Config
+            preferences: {}
+            users:
+            - name: admin
+              user:
+                password: ZmRJN29qY2h1N3RnUmllQVQ2eTRGeWNHYjJzKzVuZTBkMlZ6Z3JWTEFHST0K
+                username: admin
+
+jobs:
+### docker image publish jobs ###
+- name: currencyservice-publish-job
+  public: true
+  serial: false
+  plan:
+  - get: hipstershoprepo
+    trigger: true
+  - put: currencyservice-docker-image
+    params:
+      build: hipstershoprepo/src/currencyservice
+      additional_tags: hipstershoprepo/.git/refs/heads/((git-branch))
+
+### deployment jobs ###
+- name: deploy-to-k8s
+  plan:
+    - get: hipstershoprepo
+      passed:
+        - currencyservice-publish-job
+    - get: kubeconfig-file
+    - task: task_replce_image_id
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: {repository: ubuntu}
+        inputs:
+        - name: hipstershoprepo
+        run:
+          path: bash
+          args:
+            - -exc
+            - |
+              cd hipstershoprepo/
+              IMAGE_ID=$(<.git/refs/heads/master)
+              cd kubernetes-specs
+              sed -i "s|IMAGE_ID|$IMAGE_ID|g" currencyservice.yaml
+        outputs:
+        - name: hipstershoprepo
+    - put: k8s
+      params:
+        kubectl: apply -f hipstershoprepo/kubernetes-specs/currencyservice.yaml -n hisptershop --kubeconfig=kubeconfig-file/config
+        kubeconfig_file: kubeconfig-file/config
