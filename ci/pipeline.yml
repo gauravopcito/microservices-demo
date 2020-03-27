@@ -57,7 +57,7 @@ resources:
   type: kubernetes
   source:
     server: https://127.0.0.1:16443
-#    insecure-skip-tls-verify: true
+    insecure-skip-tls-verify: true
 
 - name: kubeconfig-file
   type: file
@@ -68,7 +68,7 @@ resources:
             clusters:
             - cluster:
                 server: https://127.0.0.1:16443
-#                insecure-skip-tls-verify: true
+                insecure-skip-tls-verify: true
               name: microk8s-cluster
             contexts:
             - context:
